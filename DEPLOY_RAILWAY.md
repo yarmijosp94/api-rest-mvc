@@ -65,8 +65,8 @@ RUN npm run build
 # Puerto
 EXPOSE 8080
 
-# Comando de inicio
-CMD php artisan config:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+# Comando de inicio (incluye migraciones y seeders)
+CMD php artisan config:clear && php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
 ```
 
 ### 1.2 Crear Procfile (respaldo)
@@ -209,12 +209,103 @@ Railway desplegará automáticamente cuando:
 
 ---
 
-## Paso 5: Verificar Funcionamiento
+## Paso 5: Seeders (Datos Iniciales)
+
+### 5.1 Configurar Seeders
+
+Los seeders se ejecutan automáticamente en el despliegue. El comando está en el Dockerfile:
+
+```bash
+php artisan db:seed --force
+```
+
+### 5.2 Crear Seeder Principal
+
+Editar `database/seeders/DatabaseSeeder.php`:
+
+```php
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $this->call([
+            CategoriaSeeder::class,
+            ProductoSeeder::class,
+            // Agregar más seeders aquí
+        ]);
+    }
+}
+```
+
+### 5.3 Ejemplo de Seeder
+
+```php
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Categoria; // o tu modelo
+
+class CategoriaSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $categorias = [
+            ['nombre' => 'Electrónica', 'descripcion' => 'Productos electrónicos'],
+            ['nombre' => 'Ropa', 'descripcion' => 'Prendas de vestir'],
+            ['nombre' => 'Alimentos', 'descripcion' => 'Productos alimenticios'],
+        ];
+
+        foreach ($categorias as $categoria) {
+            Categoria::firstOrCreate(
+                ['nombre' => $categoria['nombre']],
+                $categoria
+            );
+        }
+    }
+}
+```
+
+### 5.4 Evitar Duplicados
+
+Usar `firstOrCreate()` para evitar duplicados cuando se re-despliega:
+
+```php
+// Esto evita crear duplicados si el seeder se ejecuta múltiples veces
+Modelo::firstOrCreate(
+    ['campo_unico' => 'valor'],  // Buscar por este campo
+    ['otros_campos' => 'valores'] // Crear con estos valores si no existe
+);
+```
+
+### 5.5 Ejecutar Seeders Manualmente (Railway CLI)
+
+```bash
+# Conectar al servicio
+railway run php artisan db:seed --force
+
+# Ejecutar un seeder específico
+railway run php artisan db:seed --class=CategoriaSeeder --force
+```
+
+---
+
+## Paso 6: Verificar Funcionamiento
 
 1. Abrir la URL de tu app: `https://tu-app.up.railway.app`
-2. Verificar que las migraciones se ejecutaron en los logs
+2. Verificar en los logs que:
+   - Las migraciones se ejecutaron correctamente
+   - Los seeders se ejecutaron sin errores
 3. Probar el login/registro si aplica
-4. Verificar que no hay errores de Mixed Content (HTTP/HTTPS)
+4. Verificar que los datos iniciales existen en la base de datos
+5. Verificar que no hay errores de Mixed Content (HTTP/HTTPS)
 
 ---
 
