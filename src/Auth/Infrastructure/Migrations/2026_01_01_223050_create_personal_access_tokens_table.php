@@ -12,11 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Habilitar extensión pgcrypto para gen_random_uuid()
-        DB::statement('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+        // Habilitar extensión pgcrypto para gen_random_uuid() (solo PostgreSQL)
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+        }
 
         Schema::create('personal_access_tokens', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            } else {
+                $table->uuid('id')->primary();
+            }
             $table->uuidMorphs('tokenable');
             $table->text('name');
             $table->string('token', 64)->unique();
