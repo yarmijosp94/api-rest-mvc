@@ -44,13 +44,8 @@ RUN composer run-script post-autoload-dump || true
 # Build de assets
 RUN npm run build
 
-# Cachear configuración Laravel
-RUN php artisan config:cache || true
-RUN php artisan route:cache || true
-RUN php artisan view:cache || true
-
 # Puerto
 EXPOSE 8080
 
-# Comando de inicio
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+# Comando de inicio (cachea configuración en runtime cuando DATABASE_URL está disponible)
+CMD php artisan config:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
