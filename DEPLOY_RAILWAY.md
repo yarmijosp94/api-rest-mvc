@@ -243,7 +243,7 @@ class DatabaseSeeder extends Seeder
 }
 ```
 
-### 5.3 Ejemplo de Seeder
+### 5.3 Ejemplo de Seeder con Modelo Eloquent
 
 ```php
 <?php
@@ -251,7 +251,7 @@ class DatabaseSeeder extends Seeder
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Categoria; // o tu modelo
+use App\Models\Categoria;
 
 class CategoriaSeeder extends Seeder
 {
@@ -273,19 +273,70 @@ class CategoriaSeeder extends Seeder
 }
 ```
 
-### 5.4 Evitar Duplicados
+### 5.4 Ejemplo de Seeder con Query Builder (DB::table)
 
-Usar `firstOrCreate()` para evitar duplicados cuando se re-despliega:
+Cuando usas `DB::table()` en lugar de modelos Eloquent:
 
 ```php
-// Esto evita crear duplicados si el seeder se ejecuta múltiples veces
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class CategoriaSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $categorias = [
+            ['nombre' => 'Electrónica', 'descripcion' => 'Productos electrónicos'],
+            ['nombre' => 'Ropa', 'descripcion' => 'Prendas de vestir'],
+            ['nombre' => 'Alimentos', 'descripcion' => 'Productos alimenticios'],
+        ];
+
+        foreach ($categorias as $categoria) {
+            // Verificar si ya existe para evitar duplicados
+            $existe = DB::table('categorias')
+                ->where('nombre', $categoria['nombre'])
+                ->exists();
+
+            if (!$existe) {
+                DB::table('categorias')->insert([
+                    'id' => DB::raw('gen_random_uuid()'), // PostgreSQL
+                    'nombre' => $categoria['nombre'],
+                    'descripcion' => $categoria['descripcion'],
+                    'activo' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+}
+```
+
+### 5.5 Evitar Duplicados
+
+**Opción 1: Con Eloquent (firstOrCreate)**
+```php
 Modelo::firstOrCreate(
     ['campo_unico' => 'valor'],  // Buscar por este campo
     ['otros_campos' => 'valores'] // Crear con estos valores si no existe
 );
 ```
 
-### 5.5 Ejecutar Seeders Manualmente (Railway CLI)
+**Opción 2: Con Query Builder (exists + insert)**
+```php
+$existe = DB::table('tabla')->where('campo_unico', 'valor')->exists();
+if (!$existe) {
+    DB::table('tabla')->insert([...]);
+}
+```
+
+> **Importante:** Siempre verificar si el registro existe antes de insertar, ya que los seeders se ejecutan en cada despliegue.
+
+### 5.6 Ejecutar Seeders Manualmente (Railway CLI)
 
 ```bash
 # Conectar al servicio
