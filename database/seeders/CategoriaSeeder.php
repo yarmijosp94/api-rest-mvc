@@ -22,14 +22,19 @@ class CategoriaSeeder extends Seeder
         ];
 
         foreach ($categorias as $categoria) {
-            DB::table('categorias')->insert([
-                'id' => DB::raw('gen_random_uuid()'),
-                'nombre' => $categoria['nombre'],
-                'descripcion' => $categoria['descripcion'],
-                'activo' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Verificar si la categoría ya existe para evitar duplicados
+            $existe = DB::table('categorias')->where('nombre', $categoria['nombre'])->exists();
+
+            if (!$existe) {
+                DB::table('categorias')->insert([
+                    'id' => DB::raw('gen_random_uuid()'),
+                    'nombre' => $categoria['nombre'],
+                    'descripcion' => $categoria['descripcion'],
+                    'activo' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
     }
 }

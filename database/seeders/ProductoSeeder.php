@@ -35,19 +35,24 @@ class ProductoSeeder extends Seeder
         ];
 
         foreach ($productos as $producto) {
-            DB::table('productos')->insert([
-                'id' => DB::raw('gen_random_uuid()'),
-                'categoria_id' => $categorias[array_rand($categorias)],
-                'codigo' => $producto['codigo'],
-                'nombre' => $producto['nombre'],
-                'descripcion' => $producto['descripcion'],
-                'precio_unitario' => $producto['precio'],
-                'stock' => $producto['stock'],
-                'tipo' => $producto['tipo'],
-                'activo' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Verificar si el producto ya existe para evitar duplicados
+            $existe = DB::table('productos')->where('codigo', $producto['codigo'])->exists();
+
+            if (!$existe) {
+                DB::table('productos')->insert([
+                    'id' => DB::raw('gen_random_uuid()'),
+                    'categoria_id' => $categorias[array_rand($categorias)],
+                    'codigo' => $producto['codigo'],
+                    'nombre' => $producto['nombre'],
+                    'descripcion' => $producto['descripcion'],
+                    'precio_unitario' => $producto['precio'],
+                    'stock' => $producto['stock'],
+                    'tipo' => $producto['tipo'],
+                    'activo' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
 
         $this->command->info('Productos creados exitosamente.');
